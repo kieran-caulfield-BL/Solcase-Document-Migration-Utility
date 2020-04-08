@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema id="sql2xml"
+    targetNamespace="http://tempuri.org/sql2xml.xsd"
+    elementFormDefault="qualified"
+    xmlns="http://tempuri.org/sql2xml.xsd"
+    xmlns:mstns="http://tempuri.org/sql2xml.xsd"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+>
+    <xs:element name="SolcaseDocs">
+      <xs:complexType>
+        <xs:sequence>
+          <xs:element name="Client">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element maxOccurs="unbounded" name="Matter">
+                  <xs:complexType>
+                    <xs:sequence>
+                      <xs:element maxOccurs="unbounded" name="SolDoc">
+                        <xs:complexType>
+                          <xs:attribute name="HISTORY-NO" type="xs:unsignedInt" use="required" />
+                          <xs:attribute name="HST-DESCRIPTION" type="xs:string" use="required" />
+                          <xs:attribute name="DOCUMENT-NAME" type="xs:string" use="required" />
+                          <xs:attribute name="DOCUMENT-TYPE" type="xs:string" use="required" />
+                          <xs:attribute name="DATE-INSERTED" type="xs:string" use="required" />
+                          <xs:attribute name="LEVEL-FEE-EARNER" type="xs:string" use="required" />
+                          <xs:attribute name="DOC-GROUP" type="xs:string" use="required" />
+                          <xs:attribute name="ST-LOCATION" type="xs:string" use="required" />
+                          <xs:attribute name="SUB-PATH" type="xs:string" use="required" />
+                          <xs:attribute name="DOC-TYPE" type="xs:string" use="required" />
+                          <xs:attribute name="EXTENSION" type="xs:string" use="required" />
+                          <xs:attribute name="VERSION" type="xs:unsignedByte" use="required" />
+                          <xs:attribute name="LOC-DESCRIPTION" type="xs:string" use="required" />
+                          <xs:attribute name="LOC-TYPE" type="xs:string" use="required" />
+                        </xs:complexType>
+                      </xs:element>
+                    </xs:sequence>
+                    <xs:attribute name="MT-CODE" type="xs:string" use="required" />
+                    <xs:attribute name="MAT-DESCRIPTION" type="xs:string" use="required" />
+                  </xs:complexType>
+                </xs:element>
+              </xs:sequence>
+              <xs:attribute name="CL-CODE" type="xs:unsignedInt" use="required" />
+              <xs:attribute name="CL-NAME" type="xs:string" use="required" />
+            </xs:complexType>
+          </xs:element>
+        </xs:sequence>
+      </xs:complexType>
+    </xs:element>  
+</xs:schema>
