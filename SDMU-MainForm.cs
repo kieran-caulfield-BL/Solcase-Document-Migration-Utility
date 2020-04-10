@@ -12,8 +12,23 @@ using System.Xml;
 
 namespace Solcase_Document_Migration_Utility
 {
+
+    public static class Globals
+    {
+        public static DataSet solcaseDocs { get; set; }
+
+        static Globals()
+        {
+            // initialize MyData property in the constructor with static methods
+            solcaseDocs = new DataSet();
+        }
+    }
+
     public partial class SDMU : Form
     {
+        public string SelectedMatter { get; private set; }
+        public int SelectedMatterIndex { get; private set; }
+
         public SDMU()
         {
             InitializeComponent();
@@ -45,7 +60,6 @@ namespace Solcase_Document_Migration_Utility
 
         private void btnImport_Click(object sender, EventArgs e)
         {
-            DataSet solcaseDocsDS = new DataSet();
 
             openFileDialog1.DefaultExt = "xml";
             openFileDialog1.Filter = "xml files (*.xml)|*.xml";
@@ -59,17 +73,17 @@ namespace Solcase_Document_Migration_Utility
 
             try
             {
-                solcaseDocsDS.ReadXml(fileXML);
+                Globals.solcaseDocs.ReadXml(fileXML);
                 //bind tree view
-                if (solcaseDocsDS.Tables.Count > 0)
+                if (Globals.solcaseDocs.Tables.Count > 0)
                 {
                     treeViewClientMatters.Nodes.Clear();
 
-                    TreeNode root = new TreeNode(solcaseDocsDS.Tables[0].Rows[0]["CL-CODE"].ToString());
+                    TreeNode root = new TreeNode(Globals.solcaseDocs.Tables["Client"].Rows[0]["CL-CODE"].ToString());
                     treeViewClientMatters.Nodes.Add(root);
                     treeViewClientMatters.SelectedNode = root;
 
-                    foreach (DataRow row in solcaseDocsDS.Tables[1].Rows)
+                    foreach (DataRow row in Globals.solcaseDocs.Tables["Matter"].Rows)
                     {
                         TreeNode matterNode = new TreeNode(row["MT-CODE"].ToString());
 
@@ -78,10 +92,7 @@ namespace Solcase_Document_Migration_Utility
                     }
 
                     // set text box for client
-                    txtBxClientName.Text = solcaseDocsDS.Tables[0].Rows[0]["CL-NAME"].ToString();
-
-                    //populate data grid
-                    dataGridView1.DataSource = solcaseDocsDS.Tables[2];
+                    txtBxClientName.Text = Globals.solcaseDocs.Tables["Client"].Rows[0]["CL-NAME"].ToString();
 
                 }
 
@@ -94,7 +105,20 @@ namespace Solcase_Document_Migration_Utility
 
         private void treeViewClientMatters_AfterSelect_1(object sender, TreeViewEventArgs e)
         {
-            MessageBox.Show(e.Node.Text + " " + e.Node.Name);
+            SelectedMatter = e.Node.Text;
+            SelectedMatterIndex = e.Node.Index;
+
+            if (e.Node.Level != 0) {
+                txtBxMatterDescription.Text = Globals.solcaseDocs.Tables["Matter"].Rows[SelectedMatterIndex]["MAT-DESCRIPTION"].ToString();
+                Globals.solcaseDocs.Tables["SolDoc"].DefaultView.RowFilter = "Matter_Id = " + SelectedMatterIndex;
+                dataGridView1.DataSource = Globals.solcaseDocs.Tables["SolDoc"].DefaultView;
+            } else
+            {
+                txtBxMatterDescription.Text = "";
+            }
+
+            //populate data grid using selected Matter
+            //Globals.solcaseDocs.Tables[2].DefaultView.RowFilter = "MT-CODE = " + SelectedMatter;
         }
     }
 }

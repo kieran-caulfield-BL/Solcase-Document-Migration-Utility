@@ -73,7 +73,7 @@
             this.lblClientCode.Name = "lblClientCode";
             this.lblClientCode.Size = new System.Drawing.Size(64, 13);
             this.lblClientCode.TabIndex = 4;
-            this.lblClientCode.Text = "CLCODEXX";
+            this.lblClientCode.Text = "Client Name";
             this.lblClientCode.Click += new System.EventHandler(this.label1_Click);
             // 
             // lblMatterCode
@@ -81,9 +81,9 @@
             this.lblMatterCode.AutoSize = true;
             this.lblMatterCode.Location = new System.Drawing.Point(203, 41);
             this.lblMatterCode.Name = "lblMatterCode";
-            this.lblMatterCode.Size = new System.Drawing.Size(67, 13);
+            this.lblMatterCode.Size = new System.Drawing.Size(65, 13);
             this.lblMatterCode.TabIndex = 5;
-            this.lblMatterCode.Text = "MTCODEXX";
+            this.lblMatterCode.Text = "Matter Desc";
             // 
             // treeViewClientMatters
             // 
