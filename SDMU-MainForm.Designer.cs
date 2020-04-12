@@ -44,7 +44,7 @@
             this.dataGridView1.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dataGridView1.Location = new System.Drawing.Point(202, 76);
             this.dataGridView1.Name = "dataGridView1";
-            this.dataGridView1.Size = new System.Drawing.Size(705, 389);
+            this.dataGridView1.Size = new System.Drawing.Size(1000, 389);
             this.dataGridView1.TabIndex = 1;
             // 
             // openFileDialog1
@@ -55,7 +55,7 @@
             // 
             this.txtBxClientName.Location = new System.Drawing.Point(273, 12);
             this.txtBxClientName.Name = "txtBxClientName";
-            this.txtBxClientName.Size = new System.Drawing.Size(161, 20);
+            this.txtBxClientName.Size = new System.Drawing.Size(274, 20);
             this.txtBxClientName.TabIndex = 2;
             this.txtBxClientName.TextChanged += new System.EventHandler(this.textBox1_TextChanged);
             // 
@@ -63,7 +63,7 @@
             // 
             this.txtBxMatterDescription.Location = new System.Drawing.Point(273, 38);
             this.txtBxMatterDescription.Name = "txtBxMatterDescription";
-            this.txtBxMatterDescription.Size = new System.Drawing.Size(161, 20);
+            this.txtBxMatterDescription.Size = new System.Drawing.Size(468, 20);
             this.txtBxMatterDescription.TabIndex = 3;
             // 
             // lblClientCode
@@ -107,7 +107,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(919, 492);
+            this.ClientSize = new System.Drawing.Size(1213, 492);
             this.Controls.Add(this.btnImport);
             this.Controls.Add(this.treeViewClientMatters);
             this.Controls.Add(this.lblMatterCode);

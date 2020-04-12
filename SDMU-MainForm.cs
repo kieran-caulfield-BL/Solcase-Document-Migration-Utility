@@ -13,17 +13,6 @@ using System.Xml;
 namespace Solcase_Document_Migration_Utility
 {
 
-    public static class Globals
-    {
-        public static DataSet solcaseDocs { get; set; }
-
-        static Globals()
-        {
-            // initialize MyData property in the constructor with static methods
-            solcaseDocs = new DataSet();
-        }
-    }
-
     public partial class SDMU : Form
     {
         public string SelectedMatter { get; private set; }
@@ -36,15 +25,22 @@ namespace Solcase_Document_Migration_Utility
             //Set AutoGenerateColumns False
             dataGridView1.AutoGenerateColumns = false;
 
-            // create data grid gheaders
-            dataGridView1.ColumnCount = 2;
+            // create data grid headers, the data grid is 1000 width
+            dataGridView1.ColumnCount = 3;
             dataGridView1.Columns[0].Name = "DATE-INSERTED";
             dataGridView1.Columns[0].HeaderText = "Date Inserted";
             dataGridView1.Columns[0].DataPropertyName = "DATE-INSERTED";
+            dataGridView1.Columns[0].Width = 100;
 
             dataGridView1.Columns[1].Name = "HST-DESCRIPTION";
             dataGridView1.Columns[1].HeaderText = "Description";
             dataGridView1.Columns[1].DataPropertyName = "HST-DESCRIPTION";
+            dataGridView1.Columns[1].Width = 400;
+
+            dataGridView1.Columns[2].Name = "PROPOSED-FILE-NAME";
+            dataGridView1.Columns[2].HeaderText = "Proposed File Name";
+            dataGridView1.Columns[2].DataPropertyName = "PROPOSED-FILE-NAME";
+            dataGridView1.Columns[2].Width = 500;
 
         }
 
@@ -73,9 +69,18 @@ namespace Solcase_Document_Migration_Utility
 
             try
             {
+                // Bind out dataset to the xml file
                 Globals.solcaseDocs.ReadXml(fileXML);
-                //bind tree view
-                if (Globals.solcaseDocs.Tables.Count > 0)
+                // create a new dataset table "SolDoc" column to generate the proposed file name
+                Globals.solcaseDocs.Tables["SolDoc"].Columns.Add("PROPOSED-FILE-NAME", typeof(String));
+                // Now populate the new column
+                foreach (DataRow row in Globals.solcaseDocs.Tables["SolDoc"].Rows)
+                {
+                    row["PROPOSED-FILE-NAME"] = FileNameCorrector.ToValidFileName(row["HST-DESCRIPTION"].ToString() + "." + row["EXTENSION"].ToString());
+                }
+
+                    //bind tree view
+                    if (Globals.solcaseDocs.Tables.Count > 0)
                 {
                     treeViewClientMatters.Nodes.Clear();
 
@@ -108,6 +113,7 @@ namespace Solcase_Document_Migration_Utility
             SelectedMatter = e.Node.Text;
             SelectedMatterIndex = e.Node.Index;
 
+            //populate data grid using selected Matter
             if (e.Node.Level != 0) {
                 txtBxMatterDescription.Text = Globals.solcaseDocs.Tables["Matter"].Rows[SelectedMatterIndex]["MAT-DESCRIPTION"].ToString();
                 Globals.solcaseDocs.Tables["SolDoc"].DefaultView.RowFilter = "Matter_Id = " + SelectedMatterIndex;
@@ -117,8 +123,44 @@ namespace Solcase_Document_Migration_Utility
                 txtBxMatterDescription.Text = "";
             }
 
-            //populate data grid using selected Matter
-            //Globals.solcaseDocs.Tables[2].DefaultView.RowFilter = "MT-CODE = " + SelectedMatter;
         }
     }
+
+    public static class Globals
+    {
+        public static DataSet solcaseDocs { get; set; }
+
+        static Globals()
+        {
+            // initialize MyData property in the constructor with static methods
+            solcaseDocs = new DataSet();
+        }
+    }
+
+    public static class FileNameCorrector
+    {
+        private static HashSet<char> invalid = new HashSet<char>(Path.GetInvalidFileNameChars());
+
+        public static string ToValidFileName(this string name, char replacement = '\0')
+        {
+            var builder = new StringBuilder();
+            foreach (var cur in name)
+            {
+                if (cur > 31 && cur < 128 && !invalid.Contains(cur))
+                {
+                    builder.Append(cur);
+                }
+                else if (replacement != '\0')
+                {
+                    builder.Append(replacement);
+                }
+            }
+
+            // replace ".pdf.pdf"
+            builder.Replace(".pdf.pdf", ".pdf");
+
+            return builder.ToString();
+        }
+    }
+
 }
