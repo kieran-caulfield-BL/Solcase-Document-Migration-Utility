@@ -44,10 +44,6 @@ namespace Solcase_Document_Migration_Utility
 
         }
 
-        private void textBox1_TextChanged(object sender, EventArgs e)
-        {
-
-        }
 
         private void label1_Click(object sender, EventArgs e)
         {
@@ -124,6 +120,47 @@ namespace Solcase_Document_Migration_Utility
             }
 
         }
+
+        private async void btnCopy_Click(object sender, EventArgs e)
+        {
+            // clear the text box for copy output
+            tboxCopy.Clear();
+
+            // get the target directory
+            // Prepare a dummy string, this would appear in the dialog
+            string dummyFileName = "Save Here";
+            string savePath = "";
+
+            string sourceServer = "C:\\Users\\caulf\\OneDrive\\WorkFiles\\development\\SourceFolder\\";
+            // Feed the dummy name to the save dialog
+            saveFileDialog1.FileName = dummyFileName;
+            saveFileDialog1.Filter = "Directory | directory";
+            saveFileDialog1.Title = "Select directory to save files to.";
+
+            if (saveFileDialog1.ShowDialog() == DialogResult.OK)
+            {
+                // Now here's our save folder
+                savePath = Path.GetDirectoryName(saveFileDialog1.FileName);
+            }
+
+            // create a dictionary of source and target pair filepaths for the copy
+            Dictionary<string, string> dictCopy = new Dictionary<string, string>();
+
+            if (Globals.solcaseDocs.Tables["SolDoc"].DefaultView.Count > 0)
+            {
+                foreach (DataRowView row in Globals.solcaseDocs.Tables["SolDoc"].DefaultView)
+                {
+                    //create the source uri path from row fields
+                    String sourceFilePath = sourceServer + row["ST-LOCATION"].ToString() + "\\" + row["SUB-PATH"].ToString() + row["DOCUMENT-NAME"].ToString();
+                    String targetFilePath = savePath + "\\" + row["PROPOSED-FILE-NAME"].ToString();
+                    dictCopy.Add(sourceFilePath, targetFilePath);
+                }
+            }
+
+            double fileBlocks = 100.0;
+            await Copier.CopyFiles(dictCopy, prog => fileBlocks = prog);
+        }
+
     }
 
     public static class Globals
@@ -161,6 +198,67 @@ namespace Solcase_Document_Migration_Utility
 
             return builder.ToString();
         }
+    }
+
+    public static class Copier
+    {
+        public static async Task CopyFiles(Dictionary<string, string> files, Action<double> progressCallback)
+        {
+            long total_size = files.Keys.Select(x => new FileInfo(x).Length).Sum();
+
+            long total_read = 0;
+
+            double progress_size = 1000.0;
+
+            string progressText;
+
+            foreach (var item in files)
+            {
+                long total_read_for_file = 0;
+
+                var from = item.Key;
+                var to = item.Value;
+
+                progressText = "Copy " + from.ToString() + " to " + to.ToString() + Environment.NewLine;
+
+                using (var outStream = new FileStream(to, FileMode.Create, FileAccess.Write, FileShare.Read))
+                {
+                    using (var inStream = new FileStream(from, FileMode.Open, FileAccess.Read, FileShare.Read))
+                    {
+                        await CopyStream(inStream, outStream, x =>
+                        {
+                            total_read_for_file = x;
+                            progressCallback(((total_read + total_read_for_file) / (double)total_size) * progress_size);
+                        });
+
+                    }
+                }
+
+                total_read += total_read_for_file;
+
+            }
+        }
+
+        public static async Task CopyStream(Stream from, Stream to, Action<long> progress)
+        {
+            int buffer_size = 10240;
+
+            byte[] buffer = new byte[buffer_size];
+
+            long total_read = 0;
+
+            while (total_read < from.Length)
+            {
+                int read = await from.ReadAsync(buffer, 0, buffer_size);
+
+                await to.WriteAsync(buffer, 0, read);
+
+                total_read += read;
+
+                progress(total_read);
+            }
+        }
+
     }
 
 }
