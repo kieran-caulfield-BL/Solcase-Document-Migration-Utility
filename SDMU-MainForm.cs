@@ -8,12 +8,13 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Windows.Forms;
+using MetroFramework.Forms;
 using System.Xml;
 
 namespace Solcase_Document_Migration_Utility
 {
 
-    public partial class SDMU : Form
+    public partial class SDMU : MetroForm
     {
         public string SelectedMatter { get; private set; }
         public int SelectedMatterIndex { get; private set; }
