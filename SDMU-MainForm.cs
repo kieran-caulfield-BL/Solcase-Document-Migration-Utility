@@ -60,48 +60,56 @@ namespace Solcase_Document_Migration_Utility
 
             DialogResult result = openFileDialog1.ShowDialog(); // Show the dialog
 
-            string fileName = openFileDialog1.FileName;
-            string fileXML = fileName;
-
-            try
+            if (result == DialogResult.OK)
             {
-                // Bind out dataset to the xml file
-                Globals.solcaseDocs.ReadXml(fileXML);
-                // create a new dataset table "SolDoc" column to generate the proposed file name
-                Globals.solcaseDocs.Tables["SolDoc"].Columns.Add("PROPOSED-FILE-NAME", typeof(String));
-                // Now populate the new column
-                foreach (DataRow row in Globals.solcaseDocs.Tables["SolDoc"].Rows)
+                string fileName = openFileDialog1.FileName;
+                string fileXML = fileName;
+
+                try
                 {
-                    row["PROPOSED-FILE-NAME"] = FileNameCorrector.ToValidFileName(row["HST-DESCRIPTION"].ToString() + "." + row["EXTENSION"].ToString());
-                }
+                    // Bind out dataset to the xml file
+                    Globals.solcaseDocs = new DataSet();
+                    Globals.solcaseDocs.ReadXml(fileXML);
+                    // create a new dataset table "SolDoc" column to generate the proposed file name if not exists
+                    if (!Globals.solcaseDocs.Tables["SolDoc"].Columns.Contains("PROPOSED-FILE-NAME"))
+                    {
+                        Globals.solcaseDocs.Tables["SolDoc"].Columns.Add("PROPOSED-FILE-NAME", typeof(String));
+                    }
+                    // Now populate the new column
+                    foreach (DataRow row in Globals.solcaseDocs.Tables["SolDoc"].Rows)
+                    {
+                        row["PROPOSED-FILE-NAME"] = FileNameCorrector.ToValidFileName(row["HST-DESCRIPTION"].ToString() + "." + row["EXTENSION"].ToString());
+                    }
 
                     //bind tree view
                     if (Globals.solcaseDocs.Tables.Count > 0)
-                {
-                    treeViewClientMatters.Nodes.Clear();
-
-                    TreeNode root = new TreeNode(Globals.solcaseDocs.Tables["Client"].Rows[0]["CL-CODE"].ToString());
-                    treeViewClientMatters.Nodes.Add(root);
-                    treeViewClientMatters.SelectedNode = root;
-
-                    foreach (DataRow row in Globals.solcaseDocs.Tables["Matter"].Rows)
                     {
-                        TreeNode matterNode = new TreeNode(row["MT-CODE"].ToString());
+                        treeViewClientMatters.Nodes.Clear();
 
-                        treeViewClientMatters.SelectedNode.Nodes.Add(matterNode);
+                        TreeNode root = new TreeNode(Globals.solcaseDocs.Tables["Client"].Rows[0]["CL-CODE"].ToString());
+                        treeViewClientMatters.Nodes.Add(root);
+                        treeViewClientMatters.SelectedNode = root;
+
+                        foreach (DataRow row in Globals.solcaseDocs.Tables["Matter"].Rows)
+                        {
+                            TreeNode matterNode = new TreeNode(row["MT-CODE"].ToString());
+
+                            treeViewClientMatters.SelectedNode.Nodes.Add(matterNode);
+
+                        }
+
+                        // set text box for client
+                        txtBxClientName.Text = Globals.solcaseDocs.Tables["Client"].Rows[0]["CL-NAME"].ToString();
 
                     }
 
-                    // set text box for client
-                    txtBxClientName.Text = Globals.solcaseDocs.Tables["Client"].Rows[0]["CL-NAME"].ToString();
-
+                }
+                catch (IOException ex)
+                {
+                    Console.WriteLine(ex.ToString());
                 }
 
-            }
-            catch (IOException ex)
-            {
-                Console.WriteLine(ex.ToString());
-            }
+            } // if open file dialog result is OK
         }
 
         private void treeViewClientMatters_AfterSelect_1(object sender, TreeViewEventArgs e)
@@ -112,8 +120,13 @@ namespace Solcase_Document_Migration_Utility
             //populate data grid using selected Matter
             if (e.Node.Level != 0) {
                 txtBxMatterDescription.Text = Globals.solcaseDocs.Tables["Matter"].Rows[SelectedMatterIndex]["MAT-DESCRIPTION"].ToString();
+                Globals.solcaseDocs.Tables["SolDoc"].DefaultView.RowFilter = string.Empty;
                 Globals.solcaseDocs.Tables["SolDoc"].DefaultView.RowFilter = "Matter_Id = " + SelectedMatterIndex;
-                dataGridView1.DataSource = Globals.solcaseDocs.Tables["SolDoc"].DefaultView;
+
+                BindingSource newMatterDocs = new BindingSource
+                { DataSource = Globals.solcaseDocs.Tables["SolDoc"].DefaultView };
+
+                dataGridView1.DataSource = newMatterDocs;
             } else
             {
                 txtBxMatterDescription.Text = "";
@@ -131,7 +144,7 @@ namespace Solcase_Document_Migration_Utility
             string dummyFileName = "Save Here";
             string savePath = "";
 
-            string sourceServer = "C:\\Users\\caulf\\OneDrive\\WorkFiles\\development\\SourceFolder\\";
+            //string sourceServer = "C:\\Users\\caulf\\OneDrive\\WorkFiles\\development\\SourceFolder\\";
             // Feed the dummy name to the save dialog
             saveFileDialog1.FileName = dummyFileName;
             saveFileDialog1.Filter = "Directory | directory";
@@ -151,14 +164,19 @@ namespace Solcase_Document_Migration_Utility
                 foreach (DataRowView row in Globals.solcaseDocs.Tables["SolDoc"].DefaultView)
                 {
                     //create the source uri path from row fields
-                    String sourceFilePath = sourceServer + row["ST-LOCATION"].ToString() + "\\" + row["SUB-PATH"].ToString() + row["DOCUMENT-NAME"].ToString();
+                    String sourceFilePath = row["DOS-PATH"].ToString() + row["SUB-PATH"].ToString() + row["DOCUMENT-NAME"].ToString();
                     String targetFilePath = savePath + "\\" + row["PROPOSED-FILE-NAME"].ToString();
                     dictCopy.Add(sourceFilePath, targetFilePath);
                 }
             }
 
             double fileBlocks = 100.0;
-            await Copier.CopyFiles(dictCopy, prog => fileBlocks = prog);
+            tboxCopy.AppendText("Starting copy ...");
+            tboxCopy.AppendText(Environment.NewLine);
+
+            string progressText = await Copier.CopyFiles(dictCopy, prog => fileBlocks = prog);
+
+            tboxCopy.AppendText(progressText);
         }
 
     }
@@ -202,7 +220,7 @@ namespace Solcase_Document_Migration_Utility
 
     public static class Copier
     {
-        public static async Task CopyFiles(Dictionary<string, string> files, Action<double> progressCallback)
+        public static async Task<string> CopyFiles(Dictionary<string, string> files, Action<double> progressCallback)
         {
             long total_size = files.Keys.Select(x => new FileInfo(x).Length).Sum();
 
@@ -210,7 +228,7 @@ namespace Solcase_Document_Migration_Utility
 
             double progress_size = 1000.0;
 
-            string progressText;
+            string progressText = "";
 
             foreach (var item in files)
             {
@@ -219,17 +237,24 @@ namespace Solcase_Document_Migration_Utility
                 var from = item.Key;
                 var to = item.Value;
 
-                progressText = "Copy " + from.ToString() + " to " + to.ToString() + Environment.NewLine;
+                progressText = progressText + "Copy " + from.ToString() + " to " + to.ToString() + Environment.NewLine;
 
                 using (var outStream = new FileStream(to, FileMode.Create, FileAccess.Write, FileShare.Read))
                 {
                     using (var inStream = new FileStream(from, FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
-                        await CopyStream(inStream, outStream, x =>
+                        try
                         {
-                            total_read_for_file = x;
-                            progressCallback(((total_read + total_read_for_file) / (double)total_size) * progress_size);
-                        });
+                            await CopyStream(inStream, outStream, x =>
+                            {
+                                total_read_for_file = x;
+                                progressCallback(((total_read + total_read_for_file) / (double)total_size) * progress_size);
+                            });
+                        }
+                        catch (Exception)
+                        {
+                            throw;
+                        }
 
                     }
                 }
@@ -237,6 +262,7 @@ namespace Solcase_Document_Migration_Utility
                 total_read += total_read_for_file;
 
             }
+            return progressText;
         }
 
         public static async Task CopyStream(Stream from, Stream to, Action<long> progress)
