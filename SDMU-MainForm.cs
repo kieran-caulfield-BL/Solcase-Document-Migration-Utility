@@ -10,6 +10,7 @@ using System.IO;
 using System.Windows.Forms;
 using MetroFramework.Forms;
 using System.Xml;
+using System.Windows.Forms.VisualStyles;
 
 namespace Solcase_Document_Migration_Utility
 {
@@ -19,6 +20,8 @@ namespace Solcase_Document_Migration_Utility
         public string SelectedMatter { get; private set; }
         public int SelectedMatterIndex { get; private set; }
 
+        public delegate void CheckBoxHeaderClickHandler(CheckBoxHeaderCellEventArgs e);
+
         public SDMU()
         {
             InitializeComponent();
@@ -26,22 +29,47 @@ namespace Solcase_Document_Migration_Utility
             //Set AutoGenerateColumns False
             dataGridView1.AutoGenerateColumns = false;
 
+            // check box
+            DataGridViewCheckBoxColumn col1 = new DataGridViewCheckBoxColumn();
+            var checkheader = new CheckBoxHeaderCell();
+            checkheader.OnCheckBoxHeaderClick += checkheader_OnCheckBoxHeaderClick;
+            col1.HeaderCell = checkheader;
+
+            dataGridView1.Columns.Add(col1);
+
+            dataGridView1.ColumnCount = 7;
+
             // create data grid headers, the data grid is 1000 width
-            dataGridView1.ColumnCount = 3;
-            dataGridView1.Columns[0].Name = "DATE-INSERTED";
-            dataGridView1.Columns[0].HeaderText = "Date Inserted";
-            dataGridView1.Columns[0].DataPropertyName = "DATE-INSERTED";
-            dataGridView1.Columns[0].Width = 100;
 
-            dataGridView1.Columns[1].Name = "HST-DESCRIPTION";
-            dataGridView1.Columns[1].HeaderText = "Description";
-            dataGridView1.Columns[1].DataPropertyName = "HST-DESCRIPTION";
-            dataGridView1.Columns[1].Width = 400;
+            dataGridView1.Columns[1].Name = "DATE-INSERTED";
+            dataGridView1.Columns[1].HeaderText = "Date Inserted";
+            dataGridView1.Columns[1].DataPropertyName = "DATE-INSERTED";
+            dataGridView1.Columns[1].Width = 100;         
 
-            dataGridView1.Columns[2].Name = "PROPOSED-FILE-NAME";
-            dataGridView1.Columns[2].HeaderText = "Proposed File Name";
-            dataGridView1.Columns[2].DataPropertyName = "PROPOSED-FILE-NAME";
-            dataGridView1.Columns[2].Width = 500;
+            dataGridView1.Columns[2].Name = "HST-DESCRIPTION";
+            dataGridView1.Columns[2].HeaderText = "Description";
+            dataGridView1.Columns[2].DataPropertyName = "HST-DESCRIPTION";
+            dataGridView1.Columns[2].Width = 400;
+
+            dataGridView1.Columns[3].Name = "PROPOSED-FILE-NAME";
+            dataGridView1.Columns[3].HeaderText = "Proposed File Name";
+            dataGridView1.Columns[3].DataPropertyName = "PROPOSED-FILE-NAME";
+            dataGridView1.Columns[3].Width = 500;
+
+            dataGridView1.Columns[4].Name = "DOS-PATH";
+            dataGridView1.Columns[4].HeaderText = "DOS Path";
+            dataGridView1.Columns[4].DataPropertyName = "DOS-PATH";
+            dataGridView1.Columns[4].Visible = false;
+
+            dataGridView1.Columns[5].Name = "SUB-PATH";
+            dataGridView1.Columns[5].HeaderText = "SUB Path";
+            dataGridView1.Columns[5].DataPropertyName = "SUB-PATH";
+            dataGridView1.Columns[5].Visible = false;
+
+            dataGridView1.Columns[6].Name = "DOCUMENT-NAME";
+            dataGridView1.Columns[6].HeaderText = "Document Name";
+            dataGridView1.Columns[6].DataPropertyName = "DOCUMENT-NAME";
+            dataGridView1.Columns[6].Visible = false;
 
         }
 
@@ -49,6 +77,93 @@ namespace Solcase_Document_Migration_Utility
         private void label1_Click(object sender, EventArgs e)
         {
 
+        }
+
+        void checkheader_OnCheckBoxHeaderClick(CheckBoxHeaderCellEventArgs e)
+        {
+            dataGridView1.BeginEdit(true);
+            foreach (DataGridViewRow item in dataGridView1.Rows)
+            {
+                item.Cells[0].Value = e.IsChecked;
+            }
+            dataGridView1.EndEdit();
+
+        }
+
+        public class CheckBoxHeaderCellEventArgs : EventArgs
+        {
+            private bool _isChecked;
+            public bool IsChecked
+            {
+                get { return _isChecked; }
+            }
+
+            public CheckBoxHeaderCellEventArgs(bool _checked)
+            {
+                _isChecked = _checked;
+
+            }
+
+        }
+
+        class CheckBoxHeaderCell : DataGridViewColumnHeaderCell
+        {
+            Size checkboxsize;
+            bool ischecked;
+            Point location;
+            Point cellboundsLocation;
+            CheckBoxState state = CheckBoxState.UncheckedNormal;
+
+            public event CheckBoxHeaderClickHandler OnCheckBoxHeaderClick;
+
+            public CheckBoxHeaderCell()
+            {
+                location = new Point();
+                cellboundsLocation = new Point();
+                ischecked = false;
+            }
+
+            // http://dotnetvisio.blogspot.com/2015/08/create-select-all-checkbox-column.html
+            protected override void OnMouseClick(DataGridViewCellMouseEventArgs e)
+            {
+                /* Make a condition to check whether the click is fired inside a checkbox region */
+                Point clickpoint = new Point(e.X + cellboundsLocation.X, e.Y + cellboundsLocation.Y);
+
+                if ((clickpoint.X > location.X && clickpoint.X < (location.X + checkboxsize.Width)) && (clickpoint.Y > location.Y && clickpoint.Y < (location.Y + checkboxsize.Height)))
+                {
+                    ischecked = !ischecked;
+                    if (OnCheckBoxHeaderClick != null)
+                    {
+                        OnCheckBoxHeaderClick(new CheckBoxHeaderCellEventArgs(ischecked));
+                        this.DataGridView.InvalidateCell(this);
+                    }
+                }
+                base.OnMouseClick(e);
+            }
+
+            protected override void Paint(Graphics graphics, Rectangle clipBounds,
+                 Rectangle cellBounds, int rowIndex, DataGridViewElementStates dataGridViewElementState, object value, object formattedValue, string errorText,
+                DataGridViewCellStyle cellStyle, DataGridViewAdvancedBorderStyle
+                advancedBorderStyle, DataGridViewPaintParts paintParts)
+            {
+
+                base.Paint(graphics, clipBounds, cellBounds, rowIndex, dataGridViewElementState,
+               value, formattedValue, errorText, cellStyle, advancedBorderStyle, paintParts);
+
+                checkboxsize = CheckBoxRenderer.GetGlyphSize(graphics, CheckBoxState.UncheckedNormal);
+                location.X = cellBounds.X + (cellBounds.Width / 2 - checkboxsize.Width / 2);
+                location.Y = cellBounds.Y + (cellBounds.Height / 2 - checkboxsize.Height / 2);
+                cellboundsLocation = cellBounds.Location;
+
+                if (ischecked)
+                    state = CheckBoxState.CheckedNormal;
+                else
+                    state = CheckBoxState.UncheckedNormal;
+
+                CheckBoxRenderer.DrawCheckBox(graphics, location, state);
+
+
+            }
         }
 
         private void btnImport_Click(object sender, EventArgs e)
@@ -59,6 +174,11 @@ namespace Solcase_Document_Migration_Utility
             openFileDialog1.Title = "Select a Solcase Docs Migration File";
             openFileDialog1.FileName = "";
 
+            string userProfileFolder = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            string DownloadsFolder = userProfileFolder + "\\Downloads\\";
+
+            openFileDialog1.InitialDirectory = DownloadsFolder.ToString();
+
             DialogResult result = openFileDialog1.ShowDialog(); // Show the dialog
 
             if (result == DialogResult.OK)
@@ -68,7 +188,7 @@ namespace Solcase_Document_Migration_Utility
 
                 try
                 {
-                    // Bind out dataset to the xml file
+                    // Bind our dataset to the xml file
                     Globals.solcaseDocs = new DataSet();
                     Globals.solcaseDocs.ReadXml(fileXML);
                     // create a new dataset table "SolDoc" column to generate the proposed file name if not exists
@@ -124,10 +244,17 @@ namespace Solcase_Document_Migration_Utility
                 Globals.solcaseDocs.Tables["SolDoc"].DefaultView.RowFilter = string.Empty;
                 Globals.solcaseDocs.Tables["SolDoc"].DefaultView.RowFilter = "Matter_Id = " + SelectedMatterIndex;
 
+                // format the dates
+
+
+
                 BindingSource newMatterDocs = new BindingSource
                 { DataSource = Globals.solcaseDocs.Tables["SolDoc"].DefaultView };
 
                 dataGridView1.DataSource = newMatterDocs;
+
+                dataGridView1.Columns[0].DefaultCellStyle.Format = "d"; // Short date
+
             } else
             {
                 txtBxMatterDescription.Text = "";
@@ -160,7 +287,19 @@ namespace Solcase_Document_Migration_Utility
             // create a dictionary of source and target pair filepaths for the copy
             Dictionary<string, string> dictCopy = new Dictionary<string, string>();
 
-            if (Globals.solcaseDocs.Tables["SolDoc"].DefaultView.Count > 0)
+            // extract only the checked grid items
+            foreach (DataGridViewRow row in dataGridView1.Rows)
+            {
+                DataGridViewCheckBoxCell cell = row.Cells[0] as DataGridViewCheckBoxCell;
+                if(cell.Value!=null && (bool) cell.Value == true)
+                {
+                    String sourceFilePath = row.Cells["DOS-PATH"].Value.ToString() + row.Cells["SUB-PATH"].Value.ToString() + row.Cells["DOCUMENT-NAME"].Value.ToString();
+                    String targetFilePath = savePath + "\\" + row.Cells["PROPOSED-FILE-NAME"].Value.ToString();
+                    dictCopy.Add(sourceFilePath, targetFilePath);
+                }
+            }
+
+            /*if (Globals.solcaseDocs.Tables["SolDoc"].DefaultView.Count > 0)
             {
                 foreach (DataRowView row in Globals.solcaseDocs.Tables["SolDoc"].DefaultView)
                 {
@@ -169,7 +308,7 @@ namespace Solcase_Document_Migration_Utility
                     String targetFilePath = savePath + "\\" + row["PROPOSED-FILE-NAME"].ToString();
                     dictCopy.Add(sourceFilePath, targetFilePath);
                 }
-            }
+            }*/
 
             double fileBlocks = 100.0;
             tboxCopy.AppendText("Starting copy ...");
