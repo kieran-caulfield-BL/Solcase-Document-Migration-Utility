@@ -11,6 +11,7 @@ using System.Windows.Forms;
 using MetroFramework.Forms;
 using System.Xml;
 using System.Windows.Forms.VisualStyles;
+using System.Globalization;
 
 namespace Solcase_Document_Migration_Utility
 {
@@ -42,9 +43,10 @@ namespace Solcase_Document_Migration_Utility
             // create data grid headers, the data grid is 1000 width
 
             dataGridView1.Columns[1].Name = "DATE-INSERTED";
-            dataGridView1.Columns[1].HeaderText = "Date Inserted";
-            dataGridView1.Columns[1].DataPropertyName = "DATE-INSERTED";
-            dataGridView1.Columns[1].Width = 100;         
+            dataGridView1.Columns[1].HeaderText = "Date";
+            dataGridView1.Columns[1].DataPropertyName = "DATE-INSERTED-FORMATTED";
+            dataGridView1.Columns[1].Width = 100;
+            dataGridView1.Columns[1].SortMode = DataGridViewColumnSortMode.Automatic;
 
             dataGridView1.Columns[2].Name = "HST-DESCRIPTION";
             dataGridView1.Columns[2].HeaderText = "Description";
@@ -175,7 +177,7 @@ namespace Solcase_Document_Migration_Utility
             openFileDialog1.FileName = "";
 
             string userProfileFolder = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            string DownloadsFolder = userProfileFolder + "\\Downloads\\";
+            string DownloadsFolder = Path.Combine(userProfileFolder,"Downloads");
 
             openFileDialog1.InitialDirectory = DownloadsFolder.ToString();
 
@@ -191,6 +193,7 @@ namespace Solcase_Document_Migration_Utility
                     // Bind our dataset to the xml file
                     Globals.solcaseDocs = new DataSet();
                     Globals.solcaseDocs.ReadXml(fileXML);
+
                     // create a new dataset table "SolDoc" column to generate the proposed file name if not exists
                     if (!Globals.solcaseDocs.Tables["SolDoc"].Columns.Contains("PROPOSED-FILE-NAME"))
                     {
@@ -200,6 +203,24 @@ namespace Solcase_Document_Migration_Utility
                     foreach (DataRow row in Globals.solcaseDocs.Tables["SolDoc"].Rows)
                     {
                         row["PROPOSED-FILE-NAME"] = FileNameCorrector.ToValidFileName(row["HST-DESCRIPTION"].ToString() + "." + row["EXTENSION"].ToString());
+                    }
+
+                    // create a new dataset table "SolDoc" column to generate the date inserted formatted if not exists
+                    if (!Globals.solcaseDocs.Tables["SolDoc"].Columns.Contains("DATE-INSERTED-FORMATTED"))
+                    {
+                        Globals.solcaseDocs.Tables["SolDoc"].Columns.Add("DATE-INSERTED-FORMATTED", typeof(DateTime));
+                    }
+                    // Now populate the new column
+                    foreach (DataRow row in Globals.solcaseDocs.Tables["SolDoc"].Rows)
+                    {
+                        try
+                        {
+                            row["DATE-INSERTED-FORMATTED"] = DateTime.ParseExact(row["DATE-INSERTED"].ToString(),"dd-MM-yyyy",CultureInfo.InvariantCulture);
+                        } 
+                        catch (FormatException)
+                        {
+                            row["DATE-INSERTED-FORMATTED"] = DateTime.Today;
+                        }
                     }
 
                     //bind tree view
@@ -246,8 +267,6 @@ namespace Solcase_Document_Migration_Utility
 
                 // format the dates
 
-
-
                 BindingSource newMatterDocs = new BindingSource
                 { DataSource = Globals.solcaseDocs.Tables["SolDoc"].DefaultView };
 
@@ -270,7 +289,24 @@ namespace Solcase_Document_Migration_Utility
             // get the target directory
             // Prepare a dummy string, this would appear in the dialog
             string dummyFileName = "Save Here";
-            string savePath = "";
+            
+            String path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            string savePath = Path.Combine(path, Globals.solcaseDocs.Tables["Client"].Rows[0]["CL-CODE"].ToString());
+
+            try
+            {
+                // ... If the directory doesn't exist, create it.
+                if (!Directory.Exists(savePath))
+                {
+                    Directory.CreateDirectory(savePath);
+                }
+            }
+            catch (Exception)
+            {
+                tboxCopy.AppendText("Unable to create directory: " + savePath.ToString());
+                tboxCopy.AppendText(Environment.NewLine);
+                return;
+            }
 
             //string sourceServer = "C:\\Users\\caulf\\OneDrive\\WorkFiles\\development\\SourceFolder\\";
             // Feed the dummy name to the save dialog
@@ -278,11 +314,11 @@ namespace Solcase_Document_Migration_Utility
             saveFileDialog1.Filter = "Directory | directory";
             saveFileDialog1.Title = "Select directory to save files to.";
 
-            if (saveFileDialog1.ShowDialog() == DialogResult.OK)
+            /*if (saveFileDialog1.ShowDialog() == DialogResult.OK)
             {
                 // Now here's our save folder
                 savePath = Path.GetDirectoryName(saveFileDialog1.FileName);
-            }
+            }*/
 
             // create a dictionary of source and target pair filepaths for the copy
             Dictionary<string, string> dictCopy = new Dictionary<string, string>();
@@ -312,6 +348,8 @@ namespace Solcase_Document_Migration_Utility
 
             double fileBlocks = 100.0;
             tboxCopy.AppendText("Starting copy ...");
+            tboxCopy.AppendText(Environment.NewLine);
+            tboxCopy.AppendText("Target Directory is: " + savePath.ToString());
             tboxCopy.AppendText(Environment.NewLine);
 
             string progressText = await Copier.CopyFiles(dictCopy, prog => fileBlocks = prog);
@@ -353,6 +391,7 @@ namespace Solcase_Document_Migration_Utility
 
             // replace ".pdf.pdf"
             builder.Replace(".pdf.pdf", ".pdf");
+            builder.Replace("&amp;", "and");
 
             return builder.ToString();
         }
@@ -377,7 +416,8 @@ namespace Solcase_Document_Migration_Utility
                 var from = item.Key;
                 var to = item.Value;
 
-                progressText = progressText + "Copy " + from.ToString() + " to " + to.ToString() + Environment.NewLine;
+                progressText = progressText + "Copy from: " + from.ToString() + Environment.NewLine;
+                progressText = progressText + "Copy to  : " + to.ToString() + Environment.NewLine;
 
                 using (var outStream = new FileStream(to, FileMode.Create, FileAccess.Write, FileShare.Read))
                 {
