@@ -40,6 +40,7 @@
             this.btnCopy = new MetroFramework.Controls.MetroButton();
             this.saveFileDialog1 = new System.Windows.Forms.SaveFileDialog();
             this.tboxCopy = new System.Windows.Forms.TextBox();
+            this.metroLink1 = new MetroFramework.Controls.MetroLink();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -123,11 +124,21 @@
             this.tboxCopy.Size = new System.Drawing.Size(826, 74);
             this.tboxCopy.TabIndex = 9;
             // 
+            // metroLink1
+            // 
+            this.metroLink1.Location = new System.Drawing.Point(493, 28);
+            this.metroLink1.Name = "metroLink1";
+            this.metroLink1.Size = new System.Drawing.Size(402, 23);
+            this.metroLink1.TabIndex = 10;
+            this.metroLink1.Text = "metroLink1";
+            this.metroLink1.Click += new System.EventHandler(this.metroLink1_Click);
+            // 
             // SDMU
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(991, 577);
+            this.Controls.Add(this.metroLink1);
             this.Controls.Add(this.tboxCopy);
             this.Controls.Add(this.btnCopy);
             this.Controls.Add(this.btnImport);
@@ -159,6 +170,7 @@
         private System.Windows.Forms.SaveFileDialog saveFileDialog1;
         private System.Windows.Forms.TextBox tboxCopy;
         private MetroFramework.Controls.MetroButton btnImport;
+        private MetroFramework.Controls.MetroLink metroLink1;
     }
 }
 

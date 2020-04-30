@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Configuration;
 using System.Data;
 using System.Drawing;
 using System.Linq;
@@ -26,6 +28,11 @@ namespace Solcase_Document_Migration_Utility
         public SDMU()
         {
             InitializeComponent();
+
+
+            // populate the URL link to the solcase web page
+            metroLink1.Text = ConfigurationManager.ConnectionStrings["GetXMLFile"].ConnectionString;
+            //metroLink1.Show();
 
             //Set AutoGenerateColumns False
             dataGridView1.AutoGenerateColumns = false;
@@ -75,6 +82,16 @@ namespace Solcase_Document_Migration_Utility
 
         }
 
+
+        private void VisitLink()
+        {
+            // Change the color of the link text by setting LinkVisited
+            // to true.
+        
+            //Call the Process.Start method to open the default browser
+            //with a URL:
+            System.Diagnostics.Process.Start(ConfigurationManager.ConnectionStrings["GetXMLFile"].ConnectionString);
+        }
 
         private void label1_Click(object sender, EventArgs e)
         {
@@ -357,6 +374,17 @@ namespace Solcase_Document_Migration_Utility
             tboxCopy.AppendText(progressText);
         }
 
+        private void metroLink1_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                VisitLink();
+            }
+            catch (Exception)
+            {
+                MessageBox.Show("Unable to open link that was clicked.");
+            }
+        }
     }
 
     public static class Globals
