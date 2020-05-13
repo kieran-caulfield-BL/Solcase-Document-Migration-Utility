@@ -308,7 +308,7 @@ namespace Solcase_Document_Migration_Utility
             string dummyFileName = "Save Here";
             
             String path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            string savePath = Path.Combine(path, Globals.solcaseDocs.Tables["Client"].Rows[0]["CL-CODE"].ToString());
+            string savePath = Path.Combine(path, Globals.solcaseDocs.Tables["Client"].Rows[0]["CL-CODE"].ToString(),treeViewClientMatters.SelectedNode.Text);
 
             try
             {
@@ -369,9 +369,17 @@ namespace Solcase_Document_Migration_Utility
             tboxCopy.AppendText("Target Directory is: " + savePath.ToString());
             tboxCopy.AppendText(Environment.NewLine);
 
-            string progressText = await Copier.CopyFiles(dictCopy, prog => fileBlocks = prog);
+            progressBar1.Value = 0;
+            var progress = new Progress<int>(percent =>
+            {
+                progressBar1.Value = percent;
+
+            });
+            string progressText = await Copier.CopyFiles(progress,dictCopy, prog => fileBlocks = prog);
 
             tboxCopy.AppendText(progressText);
+
+            tboxCopy.AppendText("File Transfer Completed.");
         }
 
         private void metroLink1_Click(object sender, EventArgs e)
@@ -395,6 +403,7 @@ namespace Solcase_Document_Migration_Utility
         {
             // initialize MyData property in the constructor with static methods
             solcaseDocs = new DataSet();
+
         }
     }
 
@@ -427,19 +436,23 @@ namespace Solcase_Document_Migration_Utility
 
     public static class Copier
     {
-        public static async Task<string> CopyFiles(Dictionary<string, string> files, Action<double> progressCallback)
+        public static async Task<string> CopyFiles(IProgress<int> progress,Dictionary<string, string> files, Action<double> progressCallback)
         {
             long total_size = files.Keys.Select(x => new FileInfo(x).Length).Sum();
 
             long total_read = 0;
 
-            double progress_size = 1000.0;
+            int progressPercent = 0;
+
+            int progress_size = files.Count;
+            int progressIncrement = 100 / progress_size;
 
             string progressText = "";
 
             foreach (var item in files)
             {
                 long total_read_for_file = 0;
+                progressPercent += progressIncrement;
 
                 var from = item.Key;
                 var to = item.Value;
@@ -468,6 +481,8 @@ namespace Solcase_Document_Migration_Utility
                 }
 
                 total_read += total_read_for_file;
+
+                progress.Report(progressPercent);
 
             }
             return progressText;

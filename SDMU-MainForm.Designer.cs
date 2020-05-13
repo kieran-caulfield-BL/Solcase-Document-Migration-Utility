@@ -41,6 +41,7 @@
             this.saveFileDialog1 = new System.Windows.Forms.SaveFileDialog();
             this.tboxCopy = new System.Windows.Forms.TextBox();
             this.metroLink1 = new MetroFramework.Controls.MetroLink();
+            this.progressBar1 = new System.Windows.Forms.ProgressBar();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -49,7 +50,7 @@
             this.dataGridView1.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dataGridView1.Location = new System.Drawing.Point(154, 113);
             this.dataGridView1.Name = "dataGridView1";
-            this.dataGridView1.Size = new System.Drawing.Size(826, 368);
+            this.dataGridView1.Size = new System.Drawing.Size(826, 352);
             this.dataGridView1.TabIndex = 1;
             // 
             // openFileDialog1
@@ -108,7 +109,7 @@
             // 
             // btnCopy
             // 
-            this.btnCopy.Location = new System.Drawing.Point(905, 61);
+            this.btnCopy.Location = new System.Drawing.Point(12, 471);
             this.btnCopy.Name = "btnCopy";
             this.btnCopy.Size = new System.Drawing.Size(75, 23);
             this.btnCopy.TabIndex = 8;
@@ -117,7 +118,7 @@
             // 
             // tboxCopy
             // 
-            this.tboxCopy.Location = new System.Drawing.Point(154, 487);
+            this.tboxCopy.Location = new System.Drawing.Point(154, 497);
             this.tboxCopy.Multiline = true;
             this.tboxCopy.Name = "tboxCopy";
             this.tboxCopy.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
@@ -130,14 +131,21 @@
             this.metroLink1.Name = "metroLink1";
             this.metroLink1.Size = new System.Drawing.Size(402, 23);
             this.metroLink1.TabIndex = 10;
-            this.metroLink1.Text = "metroLink1";
             this.metroLink1.Click += new System.EventHandler(this.metroLink1_Click);
+            // 
+            // progressBar1
+            // 
+            this.progressBar1.Location = new System.Drawing.Point(154, 471);
+            this.progressBar1.Name = "progressBar1";
+            this.progressBar1.Size = new System.Drawing.Size(826, 20);
+            this.progressBar1.TabIndex = 11;
             // 
             // SDMU
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(991, 577);
+            this.Controls.Add(this.progressBar1);
             this.Controls.Add(this.metroLink1);
             this.Controls.Add(this.tboxCopy);
             this.Controls.Add(this.btnCopy);
@@ -171,6 +179,7 @@
         private System.Windows.Forms.TextBox tboxCopy;
         private MetroFramework.Controls.MetroButton btnImport;
         private MetroFramework.Controls.MetroLink metroLink1;
+        private System.Windows.Forms.ProgressBar progressBar1;
     }
 }
 
