@@ -331,14 +331,12 @@ namespace Solcase_Document_Migration_Utility
             saveFileDialog1.Filter = "Directory | directory";
             saveFileDialog1.Title = "Select directory to save files to.";
 
-            /*if (saveFileDialog1.ShowDialog() == DialogResult.OK)
-            {
-                // Now here's our save folder
-                savePath = Path.GetDirectoryName(saveFileDialog1.FileName);
-            }*/
 
             // create a dictionary of source and target pair filepaths for the copy
             Dictionary<string, string> dictCopy = new Dictionary<string, string>();
+
+            // keep a note of the last DOS Path , to raise exception.
+            string dosPath = "";
 
             // extract only the checked grid items
             foreach (DataGridViewRow row in dataGridView1.Rows)
@@ -346,22 +344,12 @@ namespace Solcase_Document_Migration_Utility
                 DataGridViewCheckBoxCell cell = row.Cells[0] as DataGridViewCheckBoxCell;
                 if(cell.Value!=null && (bool) cell.Value == true)
                 {
+                    dosPath = row.Cells["DOS-PATH"].Value.ToString();
                     String sourceFilePath = row.Cells["DOS-PATH"].Value.ToString() + row.Cells["SUB-PATH"].Value.ToString() + row.Cells["DOCUMENT-NAME"].Value.ToString();
                     String targetFilePath = savePath + "\\" + row.Cells["PROPOSED-FILE-NAME"].Value.ToString();
                     dictCopy.Add(sourceFilePath, targetFilePath);
                 }
             }
-
-            /*if (Globals.solcaseDocs.Tables["SolDoc"].DefaultView.Count > 0)
-            {
-                foreach (DataRowView row in Globals.solcaseDocs.Tables["SolDoc"].DefaultView)
-                {
-                    //create the source uri path from row fields
-                    String sourceFilePath = row["DOS-PATH"].ToString() + row["SUB-PATH"].ToString() + row["DOCUMENT-NAME"].ToString();
-                    String targetFilePath = savePath + "\\" + row["PROPOSED-FILE-NAME"].ToString();
-                    dictCopy.Add(sourceFilePath, targetFilePath);
-                }
-            }*/
 
             double fileBlocks = 100.0;
             tboxCopy.AppendText("Starting copy ...");
@@ -375,11 +363,19 @@ namespace Solcase_Document_Migration_Utility
                 progressBar1.Value = percent;
 
             });
-            string progressText = await Copier.CopyFiles(progress,dictCopy, prog => fileBlocks = prog);
 
-            tboxCopy.AppendText(progressText);
+            try
+            {
+                string progressText = await Copier.CopyFiles(progress, dictCopy, prog => fileBlocks = prog);
 
-            tboxCopy.AppendText("File Transfer Completed.");
+                tboxCopy.AppendText(progressText);
+
+                tboxCopy.AppendText("File Transfer Completed.");
+            } catch (Exception)
+            {
+                tboxCopy.AppendText(Environment.NewLine);
+                tboxCopy.AppendText("Exception Raised - Unable to copy files from: " + dosPath);
+            }
         }
 
         private void metroLink1_Click(object sender, EventArgs e)
