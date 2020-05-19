@@ -259,7 +259,7 @@ namespace Solcase_Document_Migration_Utility
 
                         // set text box for client
                         txtBxClientName.Text = Globals.solcaseDocs.Tables["Client"].Rows[0]["CL-NAME"].ToString();
-
+                       
                     }
 
                 }
@@ -290,6 +290,9 @@ namespace Solcase_Document_Migration_Utility
                 dataGridView1.DataSource = newMatterDocs;
 
                 dataGridView1.Columns[0].DefaultCellStyle.Format = "d"; // Short date
+
+                // set the count of all files imported
+                txtBoxImportTotal.Text = newMatterDocs.Count.ToString();
 
             } else
             {
@@ -338,6 +341,9 @@ namespace Solcase_Document_Migration_Utility
             // keep a note of the last DOS Path , to raise exception.
             string dosPath = "";
 
+            // count the number of checked lines
+            int checkedTotal = 0;
+
             // extract only the checked grid items
             foreach (DataGridViewRow row in dataGridView1.Rows)
             {
@@ -346,10 +352,20 @@ namespace Solcase_Document_Migration_Utility
                 {
                     dosPath = row.Cells["DOS-PATH"].Value.ToString();
                     String sourceFilePath = row.Cells["DOS-PATH"].Value.ToString() + row.Cells["SUB-PATH"].Value.ToString() + row.Cells["DOCUMENT-NAME"].Value.ToString();
-                    String targetFilePath = savePath + "\\" + row.Cells["PROPOSED-FILE-NAME"].Value.ToString();
+                    String targetFileName = row.Cells["PROPOSED-FILE-NAME"].Value.ToString();
+                    if (targetFileName.Length > 240) {
+                        targetFileName = targetFileName.Substring(0, 240);
+                    }
+                    String targetFilePath = Path.Combine(savePath,targetFileName);
                     dictCopy.Add(sourceFilePath, targetFilePath);
+                    checkedTotal += 1;
                 }
             }
+
+            // update the text box fo number of lines selected
+            txtBoxSelectedTotal.Text = checkedTotal.ToString();
+            // update the progress bar size 
+            progressBar1.Maximum = checkedTotal;
 
             double fileBlocks = 100.0;
             tboxCopy.AppendText("Starting copy ...");
@@ -364,17 +380,27 @@ namespace Solcase_Document_Migration_Utility
 
             });
 
+            string progressText = "";
+
             try
             {
-                string progressText = await Copier.CopyFiles(progress, dictCopy, prog => fileBlocks = prog);
+                progressText = await Copier.CopyFiles(progress, dictCopy, prog => fileBlocks = prog);
 
                 tboxCopy.AppendText(progressText);
-
                 tboxCopy.AppendText("File Transfer Completed.");
+
+                txtBoxCopyTotal.Text = Directory.GetFiles(savePath, "*.*", SearchOption.TopDirectoryOnly).Length.ToString();
             } catch (Exception)
             {
                 tboxCopy.AppendText(Environment.NewLine);
                 tboxCopy.AppendText("Exception Raised - Unable to copy files from: " + dosPath);
+            }
+            finally
+            {
+                tboxCopy.AppendText(progressText);
+                tboxCopy.AppendText("File Transfer Halted.");
+
+                txtBoxCopyTotal.Text = Directory.GetFiles(savePath, "*.*", SearchOption.TopDirectoryOnly).Length.ToString();
             }
         }
 
@@ -388,6 +414,11 @@ namespace Solcase_Document_Migration_Utility
             {
                 MessageBox.Show("Unable to open link that was clicked.");
             }
+        }
+
+        private void label1_Click_1(object sender, EventArgs e)
+        {
+
         }
     }
 
@@ -440,8 +471,8 @@ namespace Solcase_Document_Migration_Utility
 
             int progressPercent = 0;
 
-            int progress_size = files.Count;
-            int progressIncrement = 100 / progress_size;
+            
+            int progressIncrement = 1; // bar size is set in treeViewClientMatters_AfterSelect_1
 
             string progressText = "";
 
@@ -465,16 +496,24 @@ namespace Solcase_Document_Migration_Utility
                             await CopyStream(inStream, outStream, x =>
                             {
                                 total_read_for_file = x;
-                                progressCallback(((total_read + total_read_for_file) / (double)total_size) * progress_size);
+                                progressCallback(((total_read + total_read_for_file) / (double)total_size) * 1);
                             });
+
                         }
-                        catch (Exception)
+                        catch (Exception ex)
                         {
-                            throw;
+                            progressText = progressText + ex.Message + Environment.NewLine;
+                            progressText = progressText + "Failed to copy from  : " + from.ToString() + Environment.NewLine;
+                            progressText = progressText + "to  : " + to.ToString() + Environment.NewLine;
+
+                            continue;
                         }
 
                     }
                 }
+
+                File.SetCreationTime(to.ToString(), File.GetCreationTime(from.ToString()));
+                File.SetLastWriteTime(to.ToString(), File.GetLastWriteTime(from.ToString()));
 
                 total_read += total_read_for_file;
 
@@ -491,17 +530,17 @@ namespace Solcase_Document_Migration_Utility
             byte[] buffer = new byte[buffer_size];
 
             long total_read = 0;
+            
+                while (total_read < from.Length)
+                {
+                    int read = await from.ReadAsync(buffer, 0, buffer_size);
 
-            while (total_read < from.Length)
-            {
-                int read = await from.ReadAsync(buffer, 0, buffer_size);
+                    await to.WriteAsync(buffer, 0, read);
 
-                await to.WriteAsync(buffer, 0, read);
+                    total_read += read;
 
-                total_read += read;
-
-                progress(total_read);
-            }
+                    progress(total_read);
+                }
         }
 
     }
