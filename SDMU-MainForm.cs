@@ -390,10 +390,13 @@ namespace Solcase_Document_Migration_Utility
                 tboxCopy.AppendText("File Transfer Completed.");
 
                 txtBoxCopyTotal.Text = Directory.GetFiles(savePath, "*.*", SearchOption.TopDirectoryOnly).Length.ToString();
-            } catch (Exception)
+            } catch (Exception ex)
             {
                 tboxCopy.AppendText(Environment.NewLine);
                 tboxCopy.AppendText("Exception Raised - Unable to copy files from: " + dosPath);
+                tboxCopy.AppendText(Environment.NewLine);
+                tboxCopy.AppendText(ex.Message);
+                tboxCopy.AppendText(Environment.NewLine);
             }
             finally
             {
