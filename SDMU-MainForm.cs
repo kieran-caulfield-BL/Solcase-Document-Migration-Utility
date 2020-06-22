@@ -14,6 +14,8 @@ using MetroFramework.Forms;
 using System.Xml;
 using System.Windows.Forms.VisualStyles;
 using System.Globalization;
+using Microsoft.Office.Interop.Outlook;
+using System.Runtime.InteropServices.WindowsRuntime;
 
 namespace Solcase_Document_Migration_Utility
 {
@@ -45,7 +47,7 @@ namespace Solcase_Document_Migration_Utility
 
             dataGridView1.Columns.Add(col1);
 
-            dataGridView1.ColumnCount = 7;
+            dataGridView1.ColumnCount = 8;
 
             // create data grid headers, the data grid is 1000 width
 
@@ -63,7 +65,7 @@ namespace Solcase_Document_Migration_Utility
             dataGridView1.Columns[3].Name = "PROPOSED-FILE-NAME";
             dataGridView1.Columns[3].HeaderText = "Proposed File Name";
             dataGridView1.Columns[3].DataPropertyName = "PROPOSED-FILE-NAME";
-            dataGridView1.Columns[3].Width = 500;
+            dataGridView1.Columns[3].Width = 450;
 
             dataGridView1.Columns[4].Name = "DOS-PATH";
             dataGridView1.Columns[4].HeaderText = "DOS Path";
@@ -79,6 +81,11 @@ namespace Solcase_Document_Migration_Utility
             dataGridView1.Columns[6].HeaderText = "Document Name";
             dataGridView1.Columns[6].DataPropertyName = "DOCUMENT-NAME";
             dataGridView1.Columns[6].Visible = false;
+
+            dataGridView1.Columns[7].Name = "ATTACHMENTS";
+            dataGridView1.Columns[7].HeaderText = "Attachments";
+            dataGridView1.Columns[7].DataPropertyName = "ATTACHMENTS";
+            dataGridView1.Columns[7].Width = 50;
 
         }
 
@@ -186,8 +193,7 @@ namespace Solcase_Document_Migration_Utility
         }
 
         private void btnImport_Click(object sender, EventArgs e)
-        {
-
+        {            
             openFileDialog1.DefaultExt = "xml";
             openFileDialog1.Filter = "xml files (*.xml)|*.xml";
             openFileDialog1.Title = "Select a Solcase Docs Migration File";
@@ -216,10 +222,26 @@ namespace Solcase_Document_Migration_Utility
                     {
                         Globals.solcaseDocs.Tables["SolDoc"].Columns.Add("PROPOSED-FILE-NAME", typeof(String));
                     }
+                    // create a new dataset table "SolDoc" column to capture the number of attachments in an email
+                    if (!Globals.solcaseDocs.Tables["SolDoc"].Columns.Contains("ATTACHMENTS"))
+                    {
+                        Globals.solcaseDocs.Tables["SolDoc"].Columns.Add("ATTACHMENTS", typeof(int)).DefaultValue = 0;
+                    }
                     // Now populate the new column
                     foreach (DataRow row in Globals.solcaseDocs.Tables["SolDoc"].Rows)
                     {
                         row["PROPOSED-FILE-NAME"] = FileNameCorrector.ToValidFileName(row["HST-DESCRIPTION"].ToString() + "." + row["EXTENSION"].ToString());
+                        // check for attachments EXTENSION="msg"
+
+                        if (row["EXTENSION"].ToString() == "msg")
+                        {
+                            string email = row["DOS-PATH"].ToString() + row["SUB-PATH"].ToString() + row["DOCUMENT-NAME"].ToString();
+                            row["ATTACHMENTS"] = getNumberOfAttachments(email);
+                            
+                            tboxCopy.AppendText("Counting attachments on " + row["DOCUMENT-NAME"].ToString());
+                            tboxCopy.AppendText(Environment.NewLine);
+
+                        }
                     }
 
                     // create a new dataset table "SolDoc" column to generate the date inserted formatted if not exists
@@ -271,6 +293,15 @@ namespace Solcase_Document_Migration_Utility
             } // if open file dialog result is OK
         }
 
+        private int getNumberOfAttachments(string email)
+        {
+            // this needs outlook installed!
+            var outlook = Globals.Outlook;
+            var item = (MailItem)outlook.CreateItemFromTemplate(email, Type.Missing);
+            return item.Attachments.Count;
+            //return 1;
+        }
+
         private void treeViewClientMatters_AfterSelect_1(object sender, TreeViewEventArgs e)
         {
             SelectedMatter = e.Node.Text;
@@ -312,6 +343,7 @@ namespace Solcase_Document_Migration_Utility
             
             String path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             string savePath = Path.Combine(path, Globals.solcaseDocs.Tables["Client"].Rows[0]["CL-CODE"].ToString(),treeViewClientMatters.SelectedNode.Text);
+            string attachmentsPath = Path.Combine(savePath, "Attachments");
 
             try
             {
@@ -320,8 +352,12 @@ namespace Solcase_Document_Migration_Utility
                 {
                     Directory.CreateDirectory(savePath);
                 }
+                if (!Directory.Exists(attachmentsPath))
+                {
+                    Directory.CreateDirectory(attachmentsPath);
+                }
             }
-            catch (Exception)
+            catch (System.Exception)
             {
                 tboxCopy.AppendText("Unable to create directory: " + savePath.ToString());
                 tboxCopy.AppendText(Environment.NewLine);
@@ -336,7 +372,8 @@ namespace Solcase_Document_Migration_Utility
 
 
             // create a dictionary of source and target pair filepaths for the copy
-            Dictionary<string, string> dictCopy = new Dictionary<string, string>();
+            // annotate as true if the value is a msg file with attachments
+            Dictionary<string, Tuple<bool,string>> dictCopy = new Dictionary<string, Tuple<bool,string>>();
 
             // keep a note of the last DOS Path , to raise exception.
             string dosPath = "";
@@ -356,9 +393,11 @@ namespace Solcase_Document_Migration_Utility
                     if (targetFileName.Length > 240) {
                         targetFileName = targetFileName.Substring(0, 240);
                     }
+                    
                     String targetFilePath = Path.Combine(savePath,targetFileName);
-                    dictCopy.Add(sourceFilePath, targetFilePath);
+                    dictCopy.Add(sourceFilePath, new Tuple<bool, string>(false, targetFilePath));
                     checkedTotal += 1;
+                    
                 }
             }
 
@@ -381,6 +420,7 @@ namespace Solcase_Document_Migration_Utility
             });
 
             string progressText = "";
+            tboxCopy.Clear();
 
             try
             {
@@ -390,7 +430,7 @@ namespace Solcase_Document_Migration_Utility
                 tboxCopy.AppendText("File Transfer Completed.");
 
                 txtBoxCopyTotal.Text = Directory.GetFiles(savePath, "*.*", SearchOption.TopDirectoryOnly).Length.ToString();
-            } catch (Exception ex)
+            } catch (System.Exception ex)
             {
                 tboxCopy.AppendText(Environment.NewLine);
                 tboxCopy.AppendText("Exception Raised - Unable to copy files from: " + dosPath);
@@ -400,10 +440,48 @@ namespace Solcase_Document_Migration_Utility
             }
             finally
             {
-                tboxCopy.AppendText(progressText);
-                tboxCopy.AppendText("File Transfer Halted.");
+                //tboxCopy.AppendText(progressText);
+                //tboxCopy.AppendText("File Transfer Halted.");
 
                 txtBoxCopyTotal.Text = Directory.GetFiles(savePath, "*.*", SearchOption.TopDirectoryOnly).Length.ToString();
+            }
+
+            // Unpack attachments
+
+            foreach (DataGridViewRow row in dataGridView1.Rows)
+            {
+                DataGridViewCheckBoxCell cell = row.Cells[0] as DataGridViewCheckBoxCell;
+                if (cell.Value != null && (bool)cell.Value == true)
+                {
+                    // Inspect if this is a msg with attachments
+                    if (row.Cells["ATTACHMENTS"].Value.ToString() != "0" && row.Cells["ATTACHMENTS"].Value.ToString() != "")
+                    {
+                        tboxCopy.AppendText(Environment.NewLine);
+                        tboxCopy.AppendText("Extracting Attachments.");
+
+                        String sourceCopiedFileName = Path.Combine(savePath, row.Cells["PROPOSED-FILE-NAME"].Value.ToString());
+
+                        var outlook = Globals.Outlook;
+                        var item = (MailItem)outlook.CreateItemFromTemplate(sourceCopiedFileName, Type.Missing);
+
+                        for (int i = 1; i < item.Attachments.Count + 1; i++)
+                        {
+                            String targetDirPath = Path.Combine(attachmentsPath, Path.GetFileNameWithoutExtension(sourceCopiedFileName).Trim());
+                            // ... If the directory doesn't exist, create it.
+                            if (!Directory.Exists(targetDirPath))
+                            {
+                                Directory.CreateDirectory(targetDirPath);
+                            }
+                            String targetFilePath = Path.Combine(targetDirPath, item.Attachments[i].FileName);
+                            item.Attachments[i].SaveAsFile(targetFilePath);
+                            checkedTotal += 1;
+
+                            tboxCopy.AppendText(Environment.NewLine);
+                            tboxCopy.AppendText(targetFilePath);
+                        }
+
+                    }
+                }
             }
         }
 
@@ -413,7 +491,7 @@ namespace Solcase_Document_Migration_Utility
             {
                 VisitLink();
             }
-            catch (Exception)
+            catch (System.Exception)
             {
                 MessageBox.Show("Unable to open link that was clicked.");
             }
@@ -429,10 +507,15 @@ namespace Solcase_Document_Migration_Utility
     {
         public static DataSet solcaseDocs { get; set; }
 
+        public static Microsoft.Office.Interop.Outlook.Application Outlook { get; set; }
+
         static Globals()
         {
             // initialize MyData property in the constructor with static methods
             solcaseDocs = new DataSet();
+
+            // Email object
+            Outlook = new Microsoft.Office.Interop.Outlook.Application();
 
         }
     }
@@ -466,7 +549,7 @@ namespace Solcase_Document_Migration_Utility
 
     public static class Copier
     {
-        public static async Task<string> CopyFiles(IProgress<int> progress,Dictionary<string, string> files, Action<double> progressCallback)
+        public static async Task<string> CopyFiles(IProgress<int> progress,Dictionary<string, Tuple<bool,string>> files, Action<double> progressCallback)
         {
             long total_size = files.Keys.Select(x => new FileInfo(x).Length).Sum();
 
@@ -485,7 +568,9 @@ namespace Solcase_Document_Migration_Utility
                 progressPercent += progressIncrement;
 
                 var from = item.Key;
-                var to = item.Value;
+                var to = item.Value.Item2;
+                //TODO : check if this is a *.msg with more than 0 attachments, set as Tuple item1 (true false)
+                var attachments = item.Value.Item1;
 
                 progressText = progressText + "Copy from: " + from.ToString() + Environment.NewLine;
                 progressText = progressText + "Copy to  : " + to.ToString() + Environment.NewLine;
@@ -503,7 +588,7 @@ namespace Solcase_Document_Migration_Utility
                             });
 
                         }
-                        catch (Exception ex)
+                        catch (System.Exception ex)
                         {
                             progressText = progressText + ex.Message + Environment.NewLine;
                             progressText = progressText + "Failed to copy from  : " + from.ToString() + Environment.NewLine;
@@ -537,7 +622,7 @@ namespace Solcase_Document_Migration_Utility
                 while (total_read < from.Length)
                 {
                     int read = await from.ReadAsync(buffer, 0, buffer_size);
-
+                    
                     await to.WriteAsync(buffer, 0, read);
 
                     total_read += read;
