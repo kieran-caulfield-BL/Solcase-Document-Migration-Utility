@@ -227,29 +227,13 @@ namespace Solcase_Document_Migration_Utility
                     {
                         Globals.solcaseDocs.Tables["SolDoc"].Columns.Add("ATTACHMENTS", typeof(int)).DefaultValue = 0;
                     }
-                    // Now populate the new column
-                    foreach (DataRow row in Globals.solcaseDocs.Tables["SolDoc"].Rows)
-                    {
-                        row["PROPOSED-FILE-NAME"] = FileNameCorrector.ToValidFileName(row["HST-DESCRIPTION"].ToString() + "." + row["EXTENSION"].ToString());
-                        // check for attachments EXTENSION="msg"
-
-                        if (row["EXTENSION"].ToString() == "msg")
-                        {
-                            string email = row["DOS-PATH"].ToString() + row["SUB-PATH"].ToString() + row["DOCUMENT-NAME"].ToString();
-                            row["ATTACHMENTS"] = getNumberOfAttachments(email);
-                            
-                            tboxCopy.AppendText("Counting attachments on " + row["DOCUMENT-NAME"].ToString());
-                            tboxCopy.AppendText(Environment.NewLine);
-
-                        }
-                    }
-
+                    
                     // create a new dataset table "SolDoc" column to generate the date inserted formatted if not exists
                     if (!Globals.solcaseDocs.Tables["SolDoc"].Columns.Contains("DATE-INSERTED-FORMATTED"))
                     {
                         Globals.solcaseDocs.Tables["SolDoc"].Columns.Add("DATE-INSERTED-FORMATTED", typeof(DateTime));
                     }
-                    // Now populate the new column
+                    // Now populate the new column(s)
                     foreach (DataRow row in Globals.solcaseDocs.Tables["SolDoc"].Rows)
                     {
                         try
@@ -260,7 +244,12 @@ namespace Solcase_Document_Migration_Utility
                         {
                             row["DATE-INSERTED-FORMATTED"] = DateTime.Today;
                         }
+
+                        row["PROPOSED-FILE-NAME"] = FileNameCorrector.ToValidFileName(row["HST-DESCRIPTION"].ToString().Trim() + "." + row["EXTENSION"].ToString());
+
+                        // [ATTACHMENTS] is not filled here, as will require remote access to file (see later)
                     }
+
 
                     //bind tree view
                     if (Globals.solcaseDocs.Tables.Count > 0)
@@ -446,32 +435,44 @@ namespace Solcase_Document_Migration_Utility
                 txtBoxCopyTotal.Text = Directory.GetFiles(savePath, "*.*", SearchOption.TopDirectoryOnly).Length.ToString();
             }
 
-            // Unpack attachments
+            // Unpack attachments to msg files
 
             foreach (DataGridViewRow row in dataGridView1.Rows)
             {
                 DataGridViewCheckBoxCell cell = row.Cells[0] as DataGridViewCheckBoxCell;
-                if (cell.Value != null && (bool)cell.Value == true)
+
+                String fileSuffix = Path.GetExtension(row.Cells["PROPOSED-FILE-NAME"].Value.ToString());
+
+                if (cell.Value != null && (bool)cell.Value == true && fileSuffix == ".msg")
                 {
                     // Inspect if this is a msg with attachments
-                    if (row.Cells["ATTACHMENTS"].Value.ToString() != "0" && row.Cells["ATTACHMENTS"].Value.ToString() != "")
+                    String sourceCopiedFileName = Path.Combine(savePath, row.Cells["PROPOSED-FILE-NAME"].Value.ToString());
+
+                    var outlook = Globals.Outlook;
+                    var item = (MailItem)outlook.CreateItemFromTemplate(sourceCopiedFileName, Type.Missing);
+
+                    int attachmentsCount = item.Attachments.Count;
+
+                    row.Cells["ATTACHMENTS"].Value = attachmentsCount.ToString();
+
+                    if (attachmentsCount > 0)
                     {
+
+                        row.DefaultCellStyle.BackColor = Color.LightGray;
                         tboxCopy.AppendText(Environment.NewLine);
                         tboxCopy.AppendText("Extracting Attachments.");
 
-                        String sourceCopiedFileName = Path.Combine(savePath, row.Cells["PROPOSED-FILE-NAME"].Value.ToString());
+                        String targetDirPath = Path.Combine(attachmentsPath, Path.GetFileNameWithoutExtension(sourceCopiedFileName).Trim());
+                        // ... If the directory doesn't exist, create it.
+                        if (!Directory.Exists(targetDirPath))
+                        {
+                            Directory.CreateDirectory(targetDirPath);
+                        }
 
-                        var outlook = Globals.Outlook;
-                        var item = (MailItem)outlook.CreateItemFromTemplate(sourceCopiedFileName, Type.Missing);
-
+                        // Extract all attachments
                         for (int i = 1; i < item.Attachments.Count + 1; i++)
                         {
-                            String targetDirPath = Path.Combine(attachmentsPath, Path.GetFileNameWithoutExtension(sourceCopiedFileName).Trim());
-                            // ... If the directory doesn't exist, create it.
-                            if (!Directory.Exists(targetDirPath))
-                            {
-                                Directory.CreateDirectory(targetDirPath);
-                            }
+                           
                             String targetFilePath = Path.Combine(targetDirPath, item.Attachments[i].FileName);
                             item.Attachments[i].SaveAsFile(targetFilePath);
                             checkedTotal += 1;
