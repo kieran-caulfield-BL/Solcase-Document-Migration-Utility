@@ -48,7 +48,10 @@
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.txtBoxSelectedTotal = new System.Windows.Forms.TextBox();
+            this.btnExtract = new MetroFramework.Controls.MetroButton();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
+            this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
             // dataGridView1
@@ -102,7 +105,7 @@
             // 
             this.treeViewClientMatters.Location = new System.Drawing.Point(12, 113);
             this.treeViewClientMatters.Name = "treeViewClientMatters";
-            this.treeViewClientMatters.Size = new System.Drawing.Size(136, 262);
+            this.treeViewClientMatters.Size = new System.Drawing.Size(136, 114);
             this.treeViewClientMatters.TabIndex = 6;
             this.treeViewClientMatters.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.treeViewClientMatters_AfterSelect_1);
             // 
@@ -117,7 +120,7 @@
             // 
             // btnCopy
             // 
-            this.btnCopy.Location = new System.Drawing.Point(12, 471);
+            this.btnCopy.Location = new System.Drawing.Point(12, 340);
             this.btnCopy.Name = "btnCopy";
             this.btnCopy.Size = new System.Drawing.Size(75, 23);
             this.btnCopy.TabIndex = 8;
@@ -150,14 +153,14 @@
             // 
             // txtBoxImportTotal
             // 
-            this.txtBoxImportTotal.Location = new System.Drawing.Point(67, 401);
+            this.txtBoxImportTotal.Location = new System.Drawing.Point(67, 270);
             this.txtBoxImportTotal.Name = "txtBoxImportTotal";
             this.txtBoxImportTotal.Size = new System.Drawing.Size(81, 20);
             this.txtBoxImportTotal.TabIndex = 12;
             // 
             // txtBoxCopyTotal
             // 
-            this.txtBoxCopyTotal.Location = new System.Drawing.Point(67, 551);
+            this.txtBoxCopyTotal.Location = new System.Drawing.Point(67, 366);
             this.txtBoxCopyTotal.Name = "txtBoxCopyTotal";
             this.txtBoxCopyTotal.Size = new System.Drawing.Size(81, 20);
             this.txtBoxCopyTotal.TabIndex = 13;
@@ -165,7 +168,7 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(64, 385);
+            this.label1.Location = new System.Drawing.Point(64, 254);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(63, 13);
             this.label1.TabIndex = 14;
@@ -175,16 +178,16 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(64, 535);
+            this.label2.Location = new System.Drawing.Point(30, 369);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(58, 13);
+            this.label2.Size = new System.Drawing.Size(31, 13);
             this.label2.TabIndex = 15;
-            this.label2.Text = "Copy Total";
+            this.label2.Text = "Total";
             // 
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(64, 429);
+            this.label3.Location = new System.Drawing.Point(64, 298);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(49, 13);
             this.label3.TabIndex = 17;
@@ -192,16 +195,36 @@
             // 
             // txtBoxSelectedTotal
             // 
-            this.txtBoxSelectedTotal.Location = new System.Drawing.Point(67, 445);
+            this.txtBoxSelectedTotal.Location = new System.Drawing.Point(67, 314);
             this.txtBoxSelectedTotal.Name = "txtBoxSelectedTotal";
             this.txtBoxSelectedTotal.Size = new System.Drawing.Size(81, 20);
             this.txtBoxSelectedTotal.TabIndex = 16;
+            // 
+            // btnExtract
+            // 
+            this.btnExtract.Location = new System.Drawing.Point(10, 19);
+            this.btnExtract.Name = "btnExtract";
+            this.btnExtract.Size = new System.Drawing.Size(75, 23);
+            this.btnExtract.TabIndex = 18;
+            this.btnExtract.Text = "EXTRACT";
+            this.btnExtract.Click += new System.EventHandler(this.btnExtract_Click);
+            // 
+            // groupBox1
+            // 
+            this.groupBox1.Controls.Add(this.btnExtract);
+            this.groupBox1.Location = new System.Drawing.Point(2, 497);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Size = new System.Drawing.Size(146, 48);
+            this.groupBox1.TabIndex = 19;
+            this.groupBox1.TabStop = false;
+            this.groupBox1.Text = "Email Attachments";
             // 
             // SDMU
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(991, 577);
+            this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.txtBoxSelectedTotal);
             this.Controls.Add(this.label2);
@@ -224,6 +247,7 @@
             this.Text = "Solcase Document Migration Utility";
             this.Theme = MetroFramework.MetroThemeStyle.Light;
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).EndInit();
+            this.groupBox1.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -249,6 +273,8 @@
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.TextBox txtBoxSelectedTotal;
+        private MetroFramework.Controls.MetroButton btnExtract;
+        private System.Windows.Forms.GroupBox groupBox1;
     }
 }
 

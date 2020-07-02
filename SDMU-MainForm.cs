@@ -331,24 +331,24 @@ namespace Solcase_Document_Migration_Utility
             string dummyFileName = "Save Here";
             
             String path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            string savePath = Path.Combine(path, Globals.solcaseDocs.Tables["Client"].Rows[0]["CL-CODE"].ToString(),treeViewClientMatters.SelectedNode.Text);
-            string attachmentsPath = Path.Combine(savePath, "Attachments");
+            Globals.savePath = Path.Combine(path, Globals.solcaseDocs.Tables["Client"].Rows[0]["CL-CODE"].ToString(),treeViewClientMatters.SelectedNode.Text);
+            Globals.attachmentsPath = Path.Combine(Globals.savePath, "Attachments");
 
             try
             {
                 // ... If the directory doesn't exist, create it.
-                if (!Directory.Exists(savePath))
+                if (!Directory.Exists(Globals.savePath))
                 {
-                    Directory.CreateDirectory(savePath);
+                    Directory.CreateDirectory(Globals.savePath);
                 }
-                if (!Directory.Exists(attachmentsPath))
+                if (!Directory.Exists(Globals.attachmentsPath))
                 {
-                    Directory.CreateDirectory(attachmentsPath);
+                    Directory.CreateDirectory(Globals.attachmentsPath);
                 }
             }
             catch (System.Exception)
             {
-                tboxCopy.AppendText("Unable to create directory: " + savePath.ToString());
+                tboxCopy.AppendText("Unable to create directory: " + Globals.savePath.ToString());
                 tboxCopy.AppendText(Environment.NewLine);
                 return;
             }
@@ -368,7 +368,7 @@ namespace Solcase_Document_Migration_Utility
             string dosPath = "";
 
             // count the number of checked lines
-            int checkedTotal = 0;
+            Globals.checkedTotal = 0;
 
             // extract only the checked grid items
             foreach (DataGridViewRow row in dataGridView1.Rows)
@@ -383,22 +383,22 @@ namespace Solcase_Document_Migration_Utility
                         targetFileName = targetFileName.Substring(0, 240);
                     }
                     
-                    String targetFilePath = Path.Combine(savePath,targetFileName);
+                    String targetFilePath = Path.Combine(Globals.savePath,targetFileName);
                     dictCopy.Add(sourceFilePath, new Tuple<bool, string>(false, targetFilePath));
-                    checkedTotal += 1;
+                    Globals.checkedTotal += 1;
                     
                 }
             }
 
             // update the text box fo number of lines selected
-            txtBoxSelectedTotal.Text = checkedTotal.ToString();
+            txtBoxSelectedTotal.Text = Globals.checkedTotal.ToString();
             // update the progress bar size 
-            progressBar1.Maximum = checkedTotal;
+            progressBar1.Maximum = Globals.checkedTotal;
 
             double fileBlocks = 100.0;
             tboxCopy.AppendText("Starting copy ...");
             tboxCopy.AppendText(Environment.NewLine);
-            tboxCopy.AppendText("Target Directory is: " + savePath.ToString());
+            tboxCopy.AppendText("Target Directory is: " + Globals.savePath.ToString());
             tboxCopy.AppendText(Environment.NewLine);
 
             progressBar1.Value = 0;
@@ -418,7 +418,7 @@ namespace Solcase_Document_Migration_Utility
                 tboxCopy.AppendText(progressText);
                 tboxCopy.AppendText("File Transfer Completed.");
 
-                txtBoxCopyTotal.Text = Directory.GetFiles(savePath, "*.*", SearchOption.TopDirectoryOnly).Length.ToString();
+                txtBoxCopyTotal.Text = Directory.GetFiles(Globals.savePath, "*.*", SearchOption.TopDirectoryOnly).Length.ToString();
             } catch (System.Exception ex)
             {
                 tboxCopy.AppendText(Environment.NewLine);
@@ -432,58 +432,9 @@ namespace Solcase_Document_Migration_Utility
                 //tboxCopy.AppendText(progressText);
                 //tboxCopy.AppendText("File Transfer Halted.");
 
-                txtBoxCopyTotal.Text = Directory.GetFiles(savePath, "*.*", SearchOption.TopDirectoryOnly).Length.ToString();
+                txtBoxCopyTotal.Text = Directory.GetFiles(Globals.savePath, "*.*", SearchOption.TopDirectoryOnly).Length.ToString();
             }
 
-            // Unpack attachments to msg files
-
-            foreach (DataGridViewRow row in dataGridView1.Rows)
-            {
-                DataGridViewCheckBoxCell cell = row.Cells[0] as DataGridViewCheckBoxCell;
-
-                String fileSuffix = Path.GetExtension(row.Cells["PROPOSED-FILE-NAME"].Value.ToString());
-
-                if (cell.Value != null && (bool)cell.Value == true && fileSuffix == ".msg")
-                {
-                    // Inspect if this is a msg with attachments
-                    String sourceCopiedFileName = Path.Combine(savePath, row.Cells["PROPOSED-FILE-NAME"].Value.ToString());
-
-                    var outlook = Globals.Outlook;
-                    var item = (MailItem)outlook.CreateItemFromTemplate(sourceCopiedFileName, Type.Missing);
-
-                    int attachmentsCount = item.Attachments.Count;
-
-                    row.Cells["ATTACHMENTS"].Value = attachmentsCount.ToString();
-
-                    if (attachmentsCount > 0)
-                    {
-
-                        row.DefaultCellStyle.BackColor = Color.LightGray;
-                        tboxCopy.AppendText(Environment.NewLine);
-                        tboxCopy.AppendText("Extracting Attachments.");
-
-                        String targetDirPath = Path.Combine(attachmentsPath, Path.GetFileNameWithoutExtension(sourceCopiedFileName).Trim());
-                        // ... If the directory doesn't exist, create it.
-                        if (!Directory.Exists(targetDirPath))
-                        {
-                            Directory.CreateDirectory(targetDirPath);
-                        }
-
-                        // Extract all attachments
-                        for (int i = 1; i < item.Attachments.Count + 1; i++)
-                        {
-                           
-                            String targetFilePath = Path.Combine(targetDirPath, item.Attachments[i].FileName);
-                            item.Attachments[i].SaveAsFile(targetFilePath);
-                            checkedTotal += 1;
-
-                            tboxCopy.AppendText(Environment.NewLine);
-                            tboxCopy.AppendText(targetFilePath);
-                        }
-
-                    }
-                }
-            }
         }
 
         private void metroLink1_Click(object sender, EventArgs e)
@@ -502,6 +453,89 @@ namespace Solcase_Document_Migration_Utility
         {
 
         }
+
+        private void btnExtract_Click(object sender, EventArgs e)
+        {
+            // find where the matter files have been saved
+
+            if (Globals.savePath == null)
+            {
+                // use the grid matter number to regenerate the path
+                String path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                Globals.savePath = Path.Combine(path, Globals.solcaseDocs.Tables["Client"].Rows[0]["CL-CODE"].ToString(), treeViewClientMatters.SelectedNode.Text);
+                Globals.attachmentsPath = Path.Combine(Globals.savePath, "Attachments");
+            }
+            
+            // Unpack attachments to msg files
+
+            foreach (DataGridViewRow row in dataGridView1.Rows)
+            {
+                DataGridViewCheckBoxCell cell = row.Cells[0] as DataGridViewCheckBoxCell;
+
+                String fileSuffix = Path.GetExtension(row.Cells["PROPOSED-FILE-NAME"].Value.ToString());
+
+                if (cell.Value != null && (bool)cell.Value == true && fileSuffix == ".msg")
+                {
+                    // Inspect if this is a msg with attachments
+                    String sourceCopiedFileName = Path.Combine(Globals.savePath, row.Cells["PROPOSED-FILE-NAME"].Value.ToString());
+
+                    var outlook = Globals.Outlook;
+
+                    int attachmentsCount = 0;
+
+                    try
+                    {
+                        var item = (MailItem)outlook.CreateItemFromTemplate(sourceCopiedFileName, Type.Missing);
+                        attachmentsCount = item.Attachments.Count;
+
+                        row.Cells["ATTACHMENTS"].Value = attachmentsCount.ToString();
+
+                        if (attachmentsCount > 0)
+                        {
+
+                            row.DefaultCellStyle.BackColor = Color.LightGray;
+                            tboxCopy.AppendText(Environment.NewLine);
+                            tboxCopy.AppendText("Extracting Attachments.");
+
+                            String targetDirPath = Path.Combine(Globals.attachmentsPath, Path.GetFileNameWithoutExtension(sourceCopiedFileName).Trim());
+                            // ... If the directory doesn't exist, create it.
+                            if (!Directory.Exists(targetDirPath))
+                            {
+                                Directory.CreateDirectory(targetDirPath);
+                            }
+
+                            // Extract all attachments
+                            for (int i = 1; i < item.Attachments.Count + 1; i++)
+                            {
+
+                                String targetFilePath = Path.Combine(targetDirPath, item.Attachments[i].FileName);
+                                item.Attachments[i].SaveAsFile(targetFilePath);
+                                //Globals.checkedTotal += 1;
+
+                                tboxCopy.AppendText(Environment.NewLine);
+                                tboxCopy.AppendText(targetFilePath);
+                            }
+
+                        }
+                    }
+                    catch (System.InvalidCastException ex)
+                    {
+                        attachmentsCount = 0;
+                        tboxCopy.AppendText(Environment.NewLine);
+                        tboxCopy.AppendText(ex.Message);
+
+                    }
+                    catch (System.Exception ex)
+                    {
+                        tboxCopy.AppendText(Environment.NewLine);
+                        tboxCopy.AppendText(ex.Message);
+                    }
+                }
+            }
+
+            tboxCopy.AppendText(Environment.NewLine);
+            tboxCopy.AppendText("Email Attachements processed.");
+        }
     }
 
     public static class Globals
@@ -509,6 +543,12 @@ namespace Solcase_Document_Migration_Utility
         public static DataSet solcaseDocs { get; set; }
 
         public static Microsoft.Office.Interop.Outlook.Application Outlook { get; set; }
+
+        public static string savePath { get; set; }
+
+        public static string attachmentsPath { get; set; }
+
+        public static int checkedTotal { get; set; }
 
         static Globals()
         {
