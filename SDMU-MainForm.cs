@@ -379,8 +379,15 @@ namespace Solcase_Document_Migration_Utility
                     dosPath = row.Cells["DOS-PATH"].Value.ToString();
                     String sourceFilePath = row.Cells["DOS-PATH"].Value.ToString() + row.Cells["SUB-PATH"].Value.ToString() + row.Cells["DOCUMENT-NAME"].Value.ToString();
                     String targetFileName = row.Cells["PROPOSED-FILE-NAME"].Value.ToString();
-                    if (targetFileName.Length > 240) {
-                        targetFileName = targetFileName.Substring(0, 240);
+                    int sourceFilePathLength = sourceFilePath.Length;
+                    int targetFileNamePathLength = targetFileName.Length;
+
+                    // 250 is the max size of path + filename so reduce the file name if needed 
+
+                    int totalPathLength = sourceFilePathLength + targetFileNamePathLength;
+
+                    if (totalPathLength > 250) {
+                        targetFileName = targetFileName.Substring(0, 249 - sourceFilePathLength);
                     }
                     
                     String targetFilePath = Path.Combine(Globals.savePath,targetFileName);
