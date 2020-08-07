@@ -245,7 +245,8 @@ namespace Solcase_Document_Migration_Utility
                             row["DATE-INSERTED-FORMATTED"] = DateTime.Today;
                         }
 
-                        row["PROPOSED-FILE-NAME"] = FileNameCorrector.ToValidFileName(row["HST-DESCRIPTION"].ToString().Trim() + "." + row["EXTENSION"].ToString());
+                        // 07 Aug: Added unique HISTORY NO as many files have the same name and they get overwriiten!
+                        row["PROPOSED-FILE-NAME"] = FileNameCorrector.ToValidFileName(row["HST-DESCRIPTION"].ToString().Trim()+ "." + row["HISTORY-NO"].ToString() + "." + row["EXTENSION"].ToString());
 
                         // [ATTACHMENTS] is not filled here, as will require remote access to file (see later)
                     }
