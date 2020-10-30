@@ -331,7 +331,8 @@ namespace Solcase_Document_Migration_Utility
             // Prepare a dummy string, this would appear in the dialog
             string dummyFileName = "Save Here";
             
-            String path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            //String path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            String path = "E:\\SDMU";
             Globals.savePath = Path.Combine(path, Globals.solcaseDocs.Tables["Client"].Rows[0]["CL-CODE"].ToString(),treeViewClientMatters.SelectedNode.Text);
             Globals.attachmentsPath = Path.Combine(Globals.savePath, "Attachments");
 
@@ -469,7 +470,9 @@ namespace Solcase_Document_Migration_Utility
             if (Globals.savePath == null)
             {
                 // use the grid matter number to regenerate the path
-                String path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                //String path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                // Change 30/10/2020 - Redirect to E drive
+                String path = "E:\\SDMU";
                 Globals.savePath = Path.Combine(path, Globals.solcaseDocs.Tables["Client"].Rows[0]["CL-CODE"].ToString(), treeViewClientMatters.SelectedNode.Text);
                 Globals.attachmentsPath = Path.Combine(Globals.savePath, "Attachments");
             }
